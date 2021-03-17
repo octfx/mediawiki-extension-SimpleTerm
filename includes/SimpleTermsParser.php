@@ -112,7 +112,7 @@ class SimpleTermsParser {
 	 * @param string $text
 	 */
 	private function doParse( string $text ): void {
-		preg_match_all( '/(;\s?(?:.+\n)+):\s?(.+)/mu', $text, $matches );
+		preg_match_all( '/(;\s?(?:\w+\n)+)(?::\s?(.+)\n)+/mu', $text, $matches );
 
 		if ( empty( $matches[1] ) || empty( $matches[2] ) || count( $matches[1] ) !== count( $matches[2] ) ) {
 			return;
