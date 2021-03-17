@@ -49,6 +49,10 @@
 		"SimpleTermsCacheExpiry": {
 			"value": 2592000,
 			"description": "Expiry of DefinitionList in cache"
+		},
+		"SimpleTermsDisabledElements": {
+			"value": [],
+			"description": "List of html elements which are ignored"
 		}
 	},
 	"ResourceFileModulePaths": {

@@ -70,6 +70,10 @@ class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHo
 			return;
 		}
 
+		if ( !in_array( $title->getNamespace(), SimpleTerms::getConfigValue( 'SimpleTermsNamespaces', [] ), true ) ) {
+			return;
+		}
+
 		$profiler = new SectionProfiler();
 
 		$profiler->scopedProfileIn( 'SimpleTerms' );

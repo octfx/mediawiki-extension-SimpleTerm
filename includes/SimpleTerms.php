@@ -46,10 +46,6 @@ class SimpleTerms {
 	 * @return int
 	 */
 	public function replaceText( Title $title, ParserOutput $output ): int {
-		if ( !in_array( $title->getNamespace(), self::getConfigValue( 'SimpleTermsNamespaces', [] ), true ) ) {
-			return 0;
-		}
-
 		try {
 			$backend = $this->getBackend();
 			$list = $backend->getDefinitionList();
@@ -96,10 +92,17 @@ class SimpleTerms {
 
 		$doc = $this->parseXhtml( $html );
 
+		$extraQuery = ' ' . implode( ' ', array_map( static function ( $ignoredElement ) {
+			return sprintf( 'or ancestor-or-self::%s', $ignoredElement );
+		}, self::getConfigValue( 'SimpleTermsDisabledElements', [] ) ) );
+
 		// Find all text in HTML.
 		$xpath = new DOMXPath( $doc );
 		$textElements = $xpath->query(
-			"//*[not(ancestor-or-self::*[@class='noglossary'] or ancestor-or-self::a)][text()!=' ']/text()"
+			sprintf(
+				"//*[not(ancestor-or-self::*[@class='noglossary'] or ancestor-or-self::a or ancestor-or-self::script%s)][text()!=' ']/text()",
+				$extraQuery
+			)
 		);
 
 		$definitions = 0;

@@ -32,15 +32,17 @@ use Skin;
 class PageHooks implements OutputPageBeforeHTMLHook {
 
 	/**
-	 * Adds the tracking script to the page
-	 *
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/BeforePageDisplay
+	 * Replace the terms in the page with tooltips
 	 *
 	 * @param OutputPage $out
-	 * @param Skin &$skin
+	 * @param string &$text
 	 */
 	public function onOutputPageBeforeHTML( $out, &$text ) {
 		if ( SimpleTerms::getConfigValue( 'SimpleTermsWriteIntoOutput' ) !== false ) {
+			return;
+		}
+
+		if ( $out->getTitle() === null || !in_array( $out->getTitle()->getNamespace(), SimpleTerms::getConfigValue( 'SimpleTermsNamespaces', [] ), true ) ) {
 			return;
 		}
 
