@@ -1,0 +1,95 @@
+{
+	"name": "SimpleTerms",
+	"version": "0.0.1",
+	"author": [
+		"Octfx"
+	],
+	"url": "https://github.com/octfx/mediawiki-extension-SimpleTerms",
+	"descriptionmsg": "ext-simpleterms-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"requires": {
+		"MediaWiki": ">= 1.35.0",
+		"platform": {
+			"php": ">=7.2.0"
+		}
+	},
+	"config": {
+		"SimpleTermsBackend": {
+			"value": "BasicBackend",
+			"description": "The backend to use"
+		},
+		"SimpleTermsPage": {
+			"value": "Glossary",
+			"description": "Name of wiki page"
+		},
+		"SimpleTermsDisplayOnce": {
+			"value": false,
+			"description": "Only replace the first term in each page"
+		},
+		"SimpleTermsCacheType": {
+			"value": null,
+			"description": "Type of cache to use, if null use main cache"
+		},
+		"SimpleTermsWriteIntoOutput": {
+			"value": false,
+			"description": "Write the replacement into the parser output, saves the content to cache."
+		},
+		"SimpleTermsEnableApprovedRevs": {
+			"value": false,
+			"description": "Use the approved verison of the SimpleTerms page"
+		},
+		"SimpleTermsNamespaces": {
+			"value": [0],
+			"description": "Namespaces SimpleTerms is active"
+		},
+		"SimpleTermsCacheExpiry": {
+			"value": 2592000,
+			"description": "Expiry of DefinitionList in cache"
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "SimpleTerms/resources"
+	},
+	"ResourceModules": {
+		"ext.simple-terms": {
+			"targets": [
+				"desktop",
+				"mobile"
+			],
+			"features": [],
+			"styles": [ "ext.simple-terms.styles.tooltip/tooltip.less" ],
+			"scripts": [
+				"ext.simple-terms.scripts.tooltip/popper-lite.min.js",
+				"ext.simple-terms.scripts.tooltip/tippy-bundle.umd.min.js",
+				"ext.simple-terms.scripts.tooltip/tooltip.js"
+			],
+			"dependencies": [
+				"mediawiki.page.ready"
+			]
+		}
+	},
+	"MessagesDirs": {
+		"SimpleTerms": [
+			"i18n"
+		]
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\SimpleTerms\\": "includes/"
+	},
+	"HookHandlers": {
+		"PageHooks": {
+			"class": "MediaWiki\\Extension\\SimpleTerms\\Hooks\\PageHooks"
+		},
+		"ParserHooks": {
+			"class": "MediaWiki\\Extension\\SimpleTerms\\Hooks\\ParserHooks"
+		}
+	},
+	"Hooks": {
+		"OutputPageBeforeHTML": "PageHooks",
+		"ParserFirstCallInit": "ParserHooks",
+		"ContentAlterParserOutput": "ParserHooks"
+	},
+	"manifest_version": 2
+}
