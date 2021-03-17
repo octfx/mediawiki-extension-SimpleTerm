@@ -30,6 +30,7 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\SimpleTerms\Backend;
 
 use ErrorException;
+use ExtensionDependencyError;
 use MediaWiki\Extension\SimpleTerms\DefinitionList;
 use MediaWiki\Extension\SimpleTerms\SimpleTermsParser;
 
@@ -39,12 +40,23 @@ use MediaWiki\Extension\SimpleTerms\SimpleTermsParser;
 class BasicBackend extends Backend {
 
 	/**
+	 * @var string The serialized definition list to reduce parsing
+	 */
+	private static $serializedList;
+
+	/**
 	 * @return DefinitionList
-	 * @throws ErrorException
+	 *
+	 * @throws ErrorException|ExtensionDependencyError
 	 */
 	public function getDefinitionList(): DefinitionList {
-		$parser = new SimpleTermsParser();
-		$listData = $parser->parse();
+		if ( self::$serializedList !== null && self::$serializedList !== false ) {
+			$listData = self::$serializedList;
+		} else {
+			$parser = new SimpleTermsParser();
+			$listData = $parser->parse();
+			self::$serializedList = $listData;
+		}
 
 		if ( $listData === false ) {
 			throw new ErrorException( 'List Data is empty' );

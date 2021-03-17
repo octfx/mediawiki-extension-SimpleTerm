@@ -60,7 +60,18 @@ class SimpleTermsParser {
 		}
 
 		$this->doParse( $content );
-		return $this->writeToCache();
+		$serializedList = $this->definitionList->serialize();
+
+		if ( $this->definitionList->size() === 0 ) {
+			return false;
+		}
+
+		if ( SimpleTerms::getConfigValue( 'SimpleTermsUseCache' ) === true ) {
+
+			$this->writeToCache( $serializedList );
+		}
+
+		return $serializedList;
 	}
 
 	/**
@@ -74,13 +85,13 @@ class SimpleTermsParser {
 			return null;
 		}
 
-        if ( SimpleTerms::getConfigValue( 'SimpleTermsEnableApprovedRevs' ) === true ) {
-            $revision = $this->getRevisionFromApprovedRevs( $title );
-        } else {
-            $revision = MediaWikiServices::getInstance()
-                ->getRevisionLookup()
-                ->getKnownCurrentRevision( $title ?? Title::newMainPage() );
-        }
+		if ( SimpleTerms::getConfigValue( 'SimpleTermsEnableApprovedRevs' ) === true ) {
+			$revision = $this->getRevisionFromApprovedRevs( $title );
+		} else {
+			$revision = MediaWikiServices::getInstance()
+				->getRevisionLookup()
+				->getKnownCurrentRevision( $title ?? Title::newMainPage() );
+		}
 
 		if ( $revision === false ) {
 			return '';
@@ -155,16 +166,10 @@ class SimpleTermsParser {
 	/**
 	 * Write the created DefinitionList to cache
 	 *
-	 * @return false|string|null
-	 * @throws \Exception
+	 * @param string $serializedList
+	 * @return bool
 	 */
-	private function writeToCache() {
-		if ( $this->definitionList->size() === 0 || SimpleTerms::getConfigValue( 'SimpleTermsUseCache' ) === false ) {
-			return false;
-		}
-
-		$serializedList = $this->definitionList->serialize();
-
+	private function writeToCache( string $serializedList ): bool {
 		$success = self::getCache()->set(
 			self::getCacheKey(),
 			$serializedList,
@@ -173,7 +178,7 @@ class SimpleTermsParser {
 
 		wfDebug( sprintf( 'Definition Cache settings was %ssuccessful.', ( $success === true ?: 'not ' ) ) );
 
-		return ( $success === true ) ? $serializedList : false;
+		return $success;
 	}
 
 	/**

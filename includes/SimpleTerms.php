@@ -54,8 +54,6 @@ class SimpleTerms {
 			$backend = $this->getBackend();
 			$list = $backend->getDefinitionList();
 		} catch ( \ErrorException $e ) {
-			wfLogWarning( 'Could not load DefinitionList.' );
-
 			return 0;
 		}
 
@@ -85,7 +83,7 @@ class SimpleTerms {
 	 * @return int
 	 */
 	public function replaceHtml( string &$html ): int {
-		if ( $html === null || $html === '' || SimpleTerms::getConfigValue('SimpleTermsPage') === null) {
+		if ( $html === null || $html === '' || self::getConfigValue( 'SimpleTermsPage' ) === null ) {
 			return 0;
 		}
 
@@ -115,7 +113,7 @@ class SimpleTerms {
 			];
 		}
 
-		$displayOnce = SimpleTerms::getConfigValue('SimpleTermsDisplayOnce');
+		$displayOnce = self::getConfigValue( 'SimpleTermsDisplayOnce' );
 
 		foreach ( $textElements as /** @var \DomNode|null */$textElement ) {
 			if ( $textElement === null ) {
@@ -130,11 +128,11 @@ class SimpleTerms {
 
 			foreach ( $repls as $repl ) {
 				$text = preg_replace( $repl[0], $repl[1], $text, -1, $replaced );
-				if ($replaced > 0 && $displayOnce) {
-				    $repls = array_filter($repl, static function ($entry) use ($repl) {
-				        return $entry[0] !== $repl[0];
-                    });
-                }
+				if ( $replaced > 0 && $displayOnce ) {
+					$repls = array_filter( $repl, static function ( $entry ) use ( $repl ) {
+						return $entry[0] !== $repl[0];
+					} );
+				}
 			}
 
 			$tooltipHtml = $doc->createDocumentFragment();
