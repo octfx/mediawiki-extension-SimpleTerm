@@ -27,6 +27,9 @@
 			"value": false,
 			"description": "Only replace the first term in each page"
 		},
+		"SimpleTermsUseCache": {
+			"value": true
+		},
 		"SimpleTermsCacheType": {
 			"value": null,
 			"description": "Type of cache to use, if null use main cache"

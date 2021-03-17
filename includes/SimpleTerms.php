@@ -85,7 +85,7 @@ class SimpleTerms {
 	 * @return int
 	 */
 	public function replaceHtml( string &$html ): int {
-		if ( $html === null || $html === '' ) {
+		if ( $html === null || $html === '' || SimpleTerms::getConfigValue('SimpleTermsPage') === null) {
 			return 0;
 		}
 

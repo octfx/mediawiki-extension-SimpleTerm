@@ -74,13 +74,13 @@ class SimpleTermsParser {
 			return null;
 		}
 
-		if ( SimpleTerms::getConfigValue( 'SimpleTermsEnableApprovedRevs' ) === true ) {
-			$revision = MediaWikiServices::getInstance()
-				->getRevisionLookup()
-				->getKnownCurrentRevision( $title ?? Title::newMainPage() );
-		} else {
-			$revision = $this->getRevisionFromApprovedRevs( $title );
-		}
+        if ( SimpleTerms::getConfigValue( 'SimpleTermsEnableApprovedRevs' ) === true ) {
+            $revision = $this->getRevisionFromApprovedRevs( $title );
+        } else {
+            $revision = MediaWikiServices::getInstance()
+                ->getRevisionLookup()
+                ->getKnownCurrentRevision( $title ?? Title::newMainPage() );
+        }
 
 		if ( $revision === false ) {
 			return '';
