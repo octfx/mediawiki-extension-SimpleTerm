@@ -93,8 +93,6 @@ class SimpleTerms {
 			$backend = $this->getBackend();
 			$list = $backend->getDefinitionList();
 		} catch ( \ErrorException $e ) {
-			wfLogWarning( 'Could not load DefinitionList.' );
-
 			return 0;
 		}
 
