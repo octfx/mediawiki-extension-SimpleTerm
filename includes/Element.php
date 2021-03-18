@@ -78,16 +78,21 @@ class Element implements Serializable {
 		return $this->definition;
 	}
 
-	/**
-	 * @param string|null $term
-	 * @return string
-	 */
-	public function getFormattedDefinition( ?string $term ): string {
+    /**
+     * @param string|null $term
+     * @param bool $stripTags
+     * @return string
+     */
+	public function getFormattedDefinition( ?string $term, bool $stripTags = true ): string {
 		if ( $term === null ) {
 			$term = $this->getTerms()[0];
 		}
 
-		return sprintf( $this->format, strip_tags( $this->definition ), $term );
+		return sprintf(
+			$this->format,
+			$stripTags === true ? strip_tags( $this->definition ) : $this->definition,
+			$term
+		);
 	}
 
 	/**

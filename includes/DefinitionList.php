@@ -116,7 +116,10 @@ class DefinitionList implements Serializable, ArrayAccess {
 		foreach ( $this->getTerms() as $term ) {
 			$replacements[] = [
 				sprintf( $regex, preg_quote( $term, '\\' ) ),
-				$this[$term]->getFormattedDefinition( $term )
+				$this[$term]->getFormattedDefinition(
+					$term,
+					SimpleTerms::getConfigValue( 'SimpleTermsAllowHtml', false ) !== true
+				)
 			];
 		}
 
@@ -177,7 +180,6 @@ class DefinitionList implements Serializable, ArrayAccess {
 	 */
 	public function unserialize( $serialized ) {
 		$data = json_decode( $serialized, true );
-		// $this->terms = $data['terms'];
 
 		foreach ( $data['elements'] as $key => $element ) {
 			$el = new Element( [], '' );

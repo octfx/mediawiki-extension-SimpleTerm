@@ -50,11 +50,8 @@ class SimpleTermsParser {
 			return 0;
 		}
 
-		$list = SimpleTerms::getBackend()->getDefinitionList();
-
-		$replacements = $list->getArrayForReplacement( $this->regex );
 		$text = $output->getText();
-		$replacementCount = $this->doTextReplace( $text, $replacements );
+		$replacementCount = $this->replaceHtml( $text );
 
 		$output->setText( $text );
 
