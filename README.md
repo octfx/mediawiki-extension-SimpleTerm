@@ -2,6 +2,8 @@
 
 A partial rewrite of Extension Lingo.
 
+Local tests with 2000 Terms and definition lengths of ~200 chars caused no noticeable slowdowns, even when running the replacements on each page view.
+
 ## Configuration
 | Key                                 | Description                                                                                                                                         | Example                         | Default      |
 |-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------|--------------|
