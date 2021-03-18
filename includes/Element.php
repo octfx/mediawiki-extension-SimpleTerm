@@ -108,7 +108,7 @@ class Element implements Serializable {
 
 		return sprintf(
 			$this->simpleFormat,
-			true,
+            strip_tags( $this->definition ),
 			$term
 		);
 	}
