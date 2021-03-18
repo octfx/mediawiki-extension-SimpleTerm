@@ -110,6 +110,19 @@ class DefinitionList implements Serializable, ArrayAccess {
 		$this->elements[$replaceIndex] = $element;
 	}
 
+	public function getArrayForReplacement( string $regex ): array {
+		$replacements = [];
+
+		foreach ( $this->getTerms() as $term ) {
+			$replacements[] = [
+				sprintf( $regex, preg_quote( $term, '\\' ) ),
+				$this[$term]->getFormattedDefinition( $term )
+			];
+		}
+
+		return $replacements;
+	}
+
 	/**
 	 * @param string $term
 	 * @return bool True if a term is defined in this structure
@@ -137,24 +150,6 @@ class DefinitionList implements Serializable, ArrayAccess {
 	 */
 	public function getTerms(): array {
 		return array_keys( $this->terms );
-	}
-
-	/**
-	 * @return array
-	 */
-	public function __serialize(): array {
-		return [
-			'terms' => json_encode( $this->terms ),
-			'elements' => json_encode( $this->elements ),
-		];
-	}
-
-	/**
-	 * @param array $data
-	 */
-	public function __unserialize( array $data ): void {
-		$this->terms = json_decode( $data['terms'], true );
-		$this->elements = json_decode( $data['elements'], true );
 	}
 
 	/**
@@ -200,13 +195,14 @@ class DefinitionList implements Serializable, ArrayAccess {
 
 	/**
 	 * @inheritDoc
+	 * @return Element
 	 */
-	public function offsetGet( $offset ): ?string {
+	public function offsetGet( $offset ): ?Element {
 		if ( !$this->offsetExists( $offset ) ) {
 			return null;
 		}
 
-		return $this->elements[$this->terms[$offset]]->getDefinition();
+		return $this->elements[$this->terms[$offset]];
 	}
 
 	/**

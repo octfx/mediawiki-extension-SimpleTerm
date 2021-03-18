@@ -22,11 +22,11 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\SimpleTerms\Hooks;
 
 use Content;
-use ExtensionDependencyError;
 use MediaWiki\Content\Hook\ContentAlterParserOutputHook;
 use MediaWiki\Extension\SimpleTerms\SimpleTerms;
 use MediaWiki\Extension\SimpleTerms\SimpleTermsParser;
 use MediaWiki\Hook\ParserFirstCallInitHook;
+use MWException;
 use Parser;
 use ParserOutput;
 use PPFrame;
@@ -43,9 +43,9 @@ class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHo
 	 *
 	 * @param Parser $parser
 	 *
-	 * @throws ExtensionDependencyError
+	 * @throws MWException
 	 */
-	public function onParserFirstCallInit( $parser ) {
+	public function onParserFirstCallInit( $parser ): void {
 		$parser->setHook( 'noglossary', function ( $input, array $args, Parser $parser, PPFrame $frame ) {
 			return sprintf(
 				'<div class="noglossary">%s</div>',
@@ -53,8 +53,8 @@ class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHo
 			);
 		} );
 
-		$simpleTermsParser = new SimpleTermsParser();
-		$simpleTermsParser->parse();
+		// Warm the cache
+		SimpleTerms::getBackend()->getDefinitionList();
 	}
 
 	/**
@@ -63,22 +63,22 @@ class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHo
 	 * @param Content $content
 	 * @param Title $title
 	 * @param ParserOutput $parserOutput
-	 * @return bool|void
+	 * @return void
 	 */
-	public function onContentAlterParserOutput( $content, $title, $parserOutput ) {
-		if ( SimpleTerms::getConfigValue( 'SimpleTermsWriteIntoOutput' ) === false ) {
+	public function onContentAlterParserOutput( $content, $title, $parserOutput ): void {
+		if ( SimpleTerms::getConfigValue( 'SimpleTermsWriteIntoParserOutput', false ) === false ) {
 			return;
 		}
 
-		if ( !in_array( $title->getNamespace(), SimpleTerms::getConfigValue( 'SimpleTermsNamespaces', [] ), true ) ) {
+		if ( !SimpleTerms::titleInSimpleTermsNamespace( $title ) ) {
 			return;
 		}
 
 		$profiler = new SectionProfiler();
 
 		$profiler->scopedProfileIn( 'SimpleTerms' );
-		$simpleTerms = new SimpleTerms();
-		$simpleTerms->replaceText( $title, $parserOutput );
+		$simpleTerms = new SimpleTermsParser();
+		$simpleTerms->replaceText( $parserOutput );
 
 		wfDebug( 'SimpleTerms Call Time', 'all', $profiler->getFunctionStats() );
 	}

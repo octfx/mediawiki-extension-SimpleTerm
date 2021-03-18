@@ -24,6 +24,10 @@ namespace MediaWiki\Extension\SimpleTerms;
 use Serializable;
 
 class Element implements Serializable {
+	/**
+	 * @var string The HTML format
+	 */
+	private $format = '<span class="simple-terms-tooltip" role="tooltip" data-tippy-content="%s">%s</span>';
 
 	/**
 	 * @var array The terms
@@ -72,6 +76,18 @@ class Element implements Serializable {
 	 */
 	public function getDefinition(): string {
 		return $this->definition;
+	}
+
+	/**
+	 * @param string|null $term
+	 * @return string
+	 */
+	public function getFormattedDefinition( ?string $term ): string {
+		if ( $term === null ) {
+			$term = $this->getTerms()[0];
+		}
+
+		return sprintf( $this->format, strip_tags( $this->definition ), $term );
 	}
 
 	/**

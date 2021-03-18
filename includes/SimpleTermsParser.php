@@ -21,219 +21,225 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\SimpleTerms;
 
-use ApprovedRevs;
-use BagOStuff;
-use ExtensionDependencyError;
-use ExtensionRegistry;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Revision\RevisionRecord;
-use ObjectCache;
-use TextContent;
-use Title;
+use DOMDocument;
+use DomNode;
+use DOMXPath;
+use Exception;
+use ParserOutput;
+use ValueError;
 
 class SimpleTermsParser {
-	/**
-	 * @var DefinitionList
-	 */
-	private $definitionList;
 
 	/**
-	 * Returns the serialized definition list or false on error
+	 * Regex to replace terms
+	 * This is _kind of_ hacky as we check ending spans in a negative lookahead to not replace terms found in other
+	 * term definitions
 	 *
-	 * @return mixed
-	 * @throws ExtensionDependencyError
+	 * @var string
 	 */
-	public function parse() {
-		$cacheValue = self::getCache()->get( self::getCacheKey() );
+	private $regex = '/%s(?!.*?<\/span>)/';
 
-		// Item is valid in cache
-		if ( $cacheValue !== false ) {
-			return $cacheValue;
+	/**
+	 * Replaces terms in the direct parser output
+	 *
+	 * @param ParserOutput $output
+	 * @return int
+	 */
+	public function replaceText( ParserOutput $output ): int {
+		if ( !$this->canReplace( $output ) ) {
+			return 0;
 		}
 
-		$this->definitionList = new DefinitionList();
+		$list = SimpleTerms::getBackend()->getDefinitionList();
 
-		$content = $this->loadPageContent();
+		$replacements = $list->getArrayForReplacement( $this->regex );
+		$text = $output->getText();
+		$replacementCount = $this->doTextReplace( $text, $replacements );
 
-		if ( $content === null ) {
-			return false;
-		}
+		$output->setText( $text );
 
-		$this->doParse( $content );
-		$serializedList = $this->definitionList->serialize();
-
-		if ( $this->definitionList->size() === 0 ) {
-			return false;
-		}
-
-		if ( SimpleTerms::getConfigValue( 'SimpleTermsUseCache' ) === true ) {
-
-			$this->writeToCache( $serializedList );
-		}
-
-		return $serializedList;
+		return $replacementCount;
 	}
 
 	/**
-	 * @return string
-	 * @throws ExtensionDependencyError
-	 */
-	private function loadPageContent(): ?string {
-		$title = Title::newFromText( SimpleTerms::getConfigValue( 'SimpleTermsPage', 'Empty' ) );
-
-		if ( $title === null ) {
-			return null;
-		}
-
-		if ( SimpleTerms::getConfigValue( 'SimpleTermsEnableApprovedRevs' ) === true ) {
-			$revision = $this->getRevisionFromApprovedRevs( $title );
-		} else {
-			$revision = MediaWikiServices::getInstance()
-				->getRevisionLookup()
-				->getKnownCurrentRevision( $title ?? Title::newMainPage() );
-		}
-
-		if ( $revision === false ) {
-			return '';
-		}
-
-		$content = $revision->getContent( 'main' );
-
-		if ( !$content instanceof TextContent ) {
-			return '';
-		}
-
-		return $content->getText();
-	}
-
-	/**
-	 * Parse the configured SimpleTerms page into a Definitionlist
+	 * Replaces terms in the actual html
+	 * This _can_ be resource intensive as the html is parsed into a Document and each text node is walked once
+	 * Local tests have used ~8ms for a glossary with ~50 definitions
 	 *
-	 * @param string $text
+	 * @param string &$html
+	 * @return int
 	 */
-	private function doParse( string $text ): void {
-		preg_match_all( '/(;\s?(?:\w+\n)+)(?::\s?(.+)\n)+/mu', $text, $matches );
-
-		if ( empty( $matches[1] ) || empty( $matches[2] ) || count( $matches[1] ) !== count( $matches[2] ) ) {
-			return;
+	public function replaceHtml( string &$html ): int {
+		if ( !$this->canReplace( $html ) ) {
+			return 0;
 		}
 
-		$this->buildDataStructure( [
-			'terms' => $matches[1],
-			'definitions' => $matches[2],
-		] );
-	}
+		$list = SimpleTerms::getBackend()->getDefinitionList();
 
-	/**
-	 * Builds the data structure from elements
-	 *
-	 * @param array $found
-	 */
-	private function buildDataStructure( array $found ): void {
-		for ( $i = 0, $iMax = count( $found['terms'] ); $i < $iMax; $i++ ) {
-			$this->definitionList->addElement(
-				new Element(
-					$this->filterMapTerms( $found['terms'][$i] ),
-					trim( $found['definitions'][$i] )
-				)
-			);
-		}
-	}
+		$doc = $this->parseXhtml( $html );
 
-	/**
-	 * Extract the terms for each definition
-	 *
-	 * @param string $term
-	 * @return array
-	 */
-	private function filterMapTerms( string $term ): array {
-		return array_filter(
-		// Trim and remove line breaks
-			array_map(
-				static function ( $entry ) {
-					return preg_replace( '/\r?\n|\r/', '', trim( $entry ) );
-				},
-				// Explode terms by ;
-				explode( ';', $term )
-			),
-			// Only use non empty terms
-			static function ( $entry ) {
-				return $entry !== '';
-			}
+		$extraQuery = sprintf( ' %s', implode( ' ', array_map( static function ( $ignoredElement ) {
+			return sprintf( 'or ancestor-or-self::%s', $ignoredElement );
+		}, SimpleTerms::getConfigValue( 'SimpleTermsDisabledElements', [] ) ) ) );
+
+		// Find all text in HTML.
+		$xpath = new DOMXPath( $doc );
+		$textElements = $xpath->query(
+			sprintf(
+				"//*[not(ancestor-or-self::*[@class='noglossary'] or ancestor-or-self::a or ancestor-or-self::script%s)][text()!=' ']/text()",
+				$extraQuery
+			)
 		);
+
+		$replacementCount = 0;
+
+		$replacements = $list->getArrayForReplacement( $this->regex );
+
+		foreach ( $textElements as /** @var DomNode|null */$textElement ) {
+			if ( $textElement === null ) {
+				continue;
+			}
+
+			if ( strlen( $textElement->nodeValue ) < $list->getMinTermLength() ) {
+				continue;
+			}
+
+			$text = $textElement->nodeValue;
+
+			$replaced = $this->doTextReplace( $text, $replacements );
+
+			$tooltipHtml = $doc->createDocumentFragment();
+			$tooltipHtml->appendXML( $text );
+
+			$textElement->parentNode->replaceChild(
+				$tooltipHtml,
+				$textElement
+			);
+
+			$replacementCount += $replaced;
+		}
+
+		if ( $replacementCount > 0 ) {
+			// U - Ungreedy, D - dollar matches only end of string, s - dot matches newlines
+			$html = preg_replace( '%(^.*<body>)|(</body>.*$)%UDs', '', $doc->saveHTML() );
+		}
+
+		return $replacementCount;
 	}
 
 	/**
-	 * Write the created DefinitionList to cache
+	 * Replaces the actual terms with html definitions
 	 *
-	 * @param string $serializedList
+	 * @param string &$text The text do run the replacements on
+	 * @param array &$replacements The replacement array as returned by DefinitionList::getArrayForReplacement
+	 * @return int Number of replaced terms
+	 */
+	private function doTextReplace( string &$text, array &$replacements ): int {
+		$displayOnce = SimpleTerms::getConfigValue( 'SimpleTermsDisplayOnce' );
+		$limit = SimpleTerms::getConfigValue( 'SimpleTermsDisplayOnce', false ) === false ? -1 : 1;
+
+		$replacementCount = 0;
+
+		foreach ( $replacements as $replacement ) {
+			$text = preg_replace(
+				$replacement[0],
+				$replacement[1],
+				$text,
+				$limit,
+				$replaced
+			);
+
+			if ( $replaced > 0 && $displayOnce ) {
+				$replacements = array_filter( $replacements, static function ( $entry ) use ( &$replacement ) {
+					return $entry[0] !== $replacement[0];
+				} );
+			}
+
+			$replacementCount += $replaced;
+
+			if ( empty( $replacements ) ) {
+				break;
+			}
+		}
+
+		return $replacementCount;
+	}
+
+	/**
+	 * A simple sanity check if replacements can be run
+	 *
+	 * @param ParserOutput|string $in
 	 * @return bool
 	 */
-	private function writeToCache( string $serializedList ): bool {
-		$success = self::getCache()->set(
-			self::getCacheKey(),
-			$serializedList,
-			(int)SimpleTerms::getConfigValue( 'SimpleTermsCacheExpiry', 60 * 60 * 24 * 30 )
-		);
-
-		wfDebug( sprintf( 'Definition Cache settings was %ssuccessful.', ( $success === true ?: 'not ' ) ) );
-
-		return $success;
-	}
-
-	/**
-	 * @param Title $title
-	 * @return RevisionRecord|null
-	 * @throws ExtensionDependencyError
-	 */
-	private function getRevisionFromApprovedRevs( Title $title ): ?RevisionRecord {
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'ApprovedRevs' ) ) {
-			throw new ExtensionDependencyError( [
-				[
-					'msg' => 'Approved Revs is not loaded',
-					'type' => 'missing-extensions',
-				]
-			] );
+	private function canReplace( $in ): bool {
+		if ( SimpleTerms::getConfigValue( 'SimpleTermsPage' ) === null ) {
+			return false;
 		}
 
-		return MediaWikiServices::getInstance()
-			->getRevisionLookup()
-			->getRevisionById( ApprovedRevs::getApprovedRevID( $title ?? Title::newMainPage() ) );
-	}
-
-	/**
-	 * Return the cache to use
-	 *
-	 * @return BagOStuff
-	 */
-	public static function getCache(): BagOStuff {
-		$cacheType = SimpleTerms::getConfigValue( 'SimpleTermsCacheType' );
-
-		if ( $cacheType !== null ) {
-			$cache = ObjectCache::getInstance( $cacheType );
+		if ( $in instanceof ParserOutput ) {
+			$text = $in->getRawText();
+		} elseif ( is_string( $in ) ) {
+			$text = $in;
 		} else {
-			$cache = ObjectCache::getLocalClusterInstance();
+			return false;
 		}
 
-		return $cache;
+		return $text !== null && $text !== '';
 	}
 
 	/**
+	 * Parses a html string into a DOMDocument
+	 *
+	 * @param string $htmlContent
+	 * @param string $charset
+	 *
+	 * @return DOMDocument
+	 */
+	private function parseXhtml( string $htmlContent, string $charset = 'UTF-8' ): DOMDocument {
+		$htmlContent = $this->convertToHtmlEntities( $htmlContent, $charset );
+
+		$internalErrors = libxml_use_internal_errors( true );
+		$disableEntities = libxml_disable_entity_loader( true );
+
+		$dom = new DOMDocument( '1.0', $charset );
+		$dom->validateOnParse = true;
+
+		if ( trim( $htmlContent ) !== '' ) {
+            // @phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+			@$dom->loadHTML( $htmlContent );
+		}
+
+		libxml_use_internal_errors( $internalErrors );
+		libxml_disable_entity_loader( $disableEntities );
+
+		return $dom;
+	}
+
+	/**
+	 * Converts charset to HTML-entities to ensure valid parsing.
+	 *
+	 * @param string $htmlContent
+	 * @param string $charset
 	 * @return string
 	 */
-	public static function getCacheKey(): string {
-		return ObjectCache::getLocalClusterInstance()->makeKey(
-			'ext',
-			'simple-terms',
-			'definitionlist',
-			DefinitionList::VERSION
-		);
-	}
+	private function convertToHtmlEntities( string $htmlContent, string $charset = 'UTF-8' ): string {
+		set_error_handler( static function () {
+			// Null
+		} );
 
-	/**
-	 * Purges the SimpleTerms tree from the cache.
-	 */
-	public static function purgeGlossaryFromCache(): void {
-		self::getCache()->delete( self::getCacheKey() );
+		try {
+			return mb_convert_encoding( $htmlContent, 'HTML-ENTITIES', $charset );
+		} catch ( Exception | ValueError $e ) {
+			try {
+				$htmlContent = iconv( $charset, 'UTF-8', $htmlContent );
+				$htmlContent = mb_convert_encoding( $htmlContent, 'HTML-ENTITIES', 'UTF-8' );
+			} catch ( Exception | ValueError $e ) {
+				//
+			}
+
+			return $htmlContent;
+		} finally {
+			restore_error_handler();
+		}
 	}
 }

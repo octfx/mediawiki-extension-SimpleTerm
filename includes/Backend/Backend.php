@@ -38,5 +38,26 @@ use MediaWiki\Extension\SimpleTerms\DefinitionList;
  */
 abstract class Backend {
 
+	/**
+	 * Returns the definition list filled with terms and definitions
+	 *
+	 * @return DefinitionList
+	 */
 	abstract public function getDefinitionList(): DefinitionList;
+
+	/**
+	 * The Backend instance
+	 *
+	 * @return mixed
+	 */
+	abstract public static function getInstance();
+
+	/**
+	 * A flag which determines if the serialized definition list is written to cache
+	 *
+	 * @return bool
+	 */
+	public function useCache(): bool {
+		return true;
+	}
 }

@@ -22,215 +22,39 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\SimpleTerms;
 
 use ConfigException;
-use DOMDocument;
-use DOMXPath;
-use Exception;
 use MediaWiki\Extension\SimpleTerms\Backend\Backend;
 use MediaWiki\MediaWikiServices;
-use ParserOutput;
-use ReflectionClass;
-use ReflectionException;
-use RuntimeException;
 use Title;
 
 class SimpleTerms {
 
-	private $format = '<span class="simple-terms-tooltip" role="tooltip" data-tippy-content="%s">%s</span>';
-	private $regex = '/(\s?)(?<!role="tooltip">)%s(?!\<\/span\>)(\ )?/';
-
 	/**
-	 * Text so save in Cache
+	 * Check that a title belongs to a simple term activated namespace
 	 *
-	 * @param Title $title
-	 * @param ParserOutput $output
-	 * @return int
+	 * @param Title|null $title
+	 * @return bool
 	 */
-	public function replaceText( Title $title, ParserOutput $output ): int {
-		try {
-			$backend = $this->getBackend();
-			$list = $backend->getDefinitionList();
-		} catch ( \ErrorException $e ) {
-			return 0;
-		}
-
-		$terms = $list->getTerms();
-		$text = $output->getText();
-		$replacements = 0;
-
-		foreach ( $terms as $term ) {
-			$text = preg_replace(
-				sprintf( $this->regex, preg_quote( $term, '\\' ) ),
-				sprintf( $this->format, strip_tags( $list[$term] ?? '' ), $term ),
-				$text,
-				self::getConfigValue( 'SimpleTermsDisplayOnce', false ) === false ? -1 : 1,
-				$replacements
-			);
-		}
-
-		$output->setText( $text );
-
-		return $replacements;
+	public static function titleInSimpleTermsNamespace( ?Title $title ): bool {
+		return $title !== null && in_array( $title->getNamespace(), self::getConfigValue( 'SimpleTermsNamespaces', [] ), true );
 	}
 
 	/**
-	 * Parses the given text and enriches applicable terms
-	 *
-	 * @param string &$html
-	 * @return int
-	 */
-	public function replaceHtml( string &$html ): int {
-		if ( $html === null || $html === '' || self::getConfigValue( 'SimpleTermsPage' ) === null ) {
-			return 0;
-		}
-
-		try {
-			$backend = $this->getBackend();
-			$list = $backend->getDefinitionList();
-		} catch ( \ErrorException $e ) {
-			return 0;
-		}
-
-		$doc = $this->parseXhtml( $html );
-
-		$extraQuery = ' ' . implode( ' ', array_map( static function ( $ignoredElement ) {
-			return sprintf( 'or ancestor-or-self::%s', $ignoredElement );
-		}, self::getConfigValue( 'SimpleTermsDisabledElements', [] ) ) );
-
-		// Find all text in HTML.
-		$xpath = new DOMXPath( $doc );
-		$textElements = $xpath->query(
-			sprintf(
-				"//*[not(ancestor-or-self::*[@class='noglossary'] or ancestor-or-self::a or ancestor-or-self::script%s)][text()!=' ']/text()",
-				$extraQuery
-			)
-		);
-
-		$definitions = 0;
-
-		$repls = [];
-
-		foreach ( $list->getTerms() as $term ) {
-			$repls[] = [
-				sprintf( '/%s(?!.*?<\/span>)/', $term ),
-				sprintf( $this->format, strip_tags( $list[$term] ?? '', 'sup' ), $term )
-			];
-		}
-
-		$displayOnce = self::getConfigValue( 'SimpleTermsDisplayOnce' );
-
-		foreach ( $textElements as /** @var \DomNode|null */$textElement ) {
-			if ( $textElement === null ) {
-				continue;
-			}
-
-			if ( strlen( $textElement->nodeValue ) < $list->getMinTermLength() ) {
-				continue;
-			}
-
-			$text = $textElement->nodeValue;
-
-			foreach ( $repls as $repl ) {
-				$text = preg_replace( $repl[0], $repl[1], $text, -1, $replaced );
-				if ( $replaced > 0 && $displayOnce ) {
-					$repls = array_filter( $repl, static function ( $entry ) use ( $repl ) {
-						return $entry[0] !== $repl[0];
-					} );
-				}
-			}
-
-			$tooltipHtml = $doc->createDocumentFragment();
-			$tooltipHtml->appendXML( $text );
-
-			$textElement->parentNode->replaceChild(
-				$tooltipHtml,
-				$textElement
-			);
-
-			++$definitions;
-		}
-
-		if ( $definitions > 0 ) {
-			// U - Ungreedy, D - dollar matches only end of string, s - dot matches newlines
-			$html = preg_replace( '%(^.*<body>)|(</body>.*$)%UDs', '', $doc->saveHTML() );
-		}
-
-		return $definitions;
-	}
-
-	/**
-	 * Instantiates the configured backend
+	 * Returns an instance of the configured backend
 	 *
 	 * @return Backend
+	 *
+	 * @throws ConfigException
 	 */
-	private function getBackend(): Backend {
+	public static function getBackend(): Backend {
 		$classPath = '\\MediaWiki\\Extension\\SimpleTerms\\Backend\\%s';
-		$backendClass = self::getConfigValue( 'SimpleTermsBackend' );
+		$backendClass = sprintf( $classPath, self::getConfigValue( 'SimpleTermsBackend' ) );
 
-		try {
-			$class = new ReflectionClass( sprintf( $classPath, $backendClass ) );
-			/** @var Backend $backend */
-			$backend = $class->newInstance();
-		} catch ( ReflectionException $e ) {
-			throw new RuntimeException( sprintf( '"%s" is not a valid backend.', $e->getMessage() ) );
+		if ( !class_exists( $backendClass ) ) {
+			throw new ConfigException( sprintf( '"%s" is not a valid backend.', $backendClass ) );
 		}
 
-		return $backend;
-	}
-
-	/**
-	 * Parses a html string into a DOMDocument
-	 *
-	 * @param string $htmlContent
-	 * @param string $charset
-	 *
-	 * @return DOMDocument
-	 */
-	private function parseXhtml( string $htmlContent, string $charset = 'UTF-8' ): DOMDocument {
-		$htmlContent = $this->convertToHtmlEntities( $htmlContent, $charset );
-
-		$internalErrors = libxml_use_internal_errors( true );
-		$disableEntities = libxml_disable_entity_loader( true );
-
-		$dom = new DOMDocument( '1.0', $charset );
-		$dom->validateOnParse = true;
-
-		if ( trim( $htmlContent ) !== '' ) {
-            // @phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-			@$dom->loadHTML( $htmlContent );
-		}
-
-		libxml_use_internal_errors( $internalErrors );
-		libxml_disable_entity_loader( $disableEntities );
-
-		return $dom;
-	}
-
-	/**
-	 * Converts charset to HTML-entities to ensure valid parsing.
-	 *
-	 * @param string $htmlContent
-	 * @param string $charset
-	 * @return string
-	 */
-	private function convertToHtmlEntities( string $htmlContent, string $charset = 'UTF-8' ): string {
-		set_error_handler( static function () {
-			// Null
-		} );
-
-		try {
-			return mb_convert_encoding( $htmlContent, 'HTML-ENTITIES', $charset );
-		} catch ( Exception | ValueError $e ) {
-			try {
-				$htmlContent = iconv( $charset, 'UTF-8', $htmlContent );
-				$htmlContent = mb_convert_encoding( $htmlContent, 'HTML-ENTITIES', 'UTF-8' );
-			} catch ( Exception | ValueError $e ) {
-				//
-			}
-
-			return $htmlContent;
-		} finally {
-			restore_error_handler();
-		}
+		/** @var Backend $backend */
+		return $backendClass::getInstance();
 	}
 
 	/**

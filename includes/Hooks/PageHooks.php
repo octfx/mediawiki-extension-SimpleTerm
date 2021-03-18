@@ -22,9 +22,9 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\SimpleTerms\Hooks;
 
 use MediaWiki\Extension\SimpleTerms\SimpleTerms;
+use MediaWiki\Extension\SimpleTerms\SimpleTermsParser;
 use MediaWiki\Hook\OutputPageBeforeHTMLHook;
 use OutputPage;
-use Skin;
 
 /**
  * Hooks to run relating the page
@@ -37,18 +37,19 @@ class PageHooks implements OutputPageBeforeHTMLHook {
 	 * @param OutputPage $out
 	 * @param string &$text
 	 */
-	public function onOutputPageBeforeHTML( $out, &$text ) {
-		if ( SimpleTerms::getConfigValue( 'SimpleTermsWriteIntoOutput' ) !== false ) {
+	public function onOutputPageBeforeHTML( $out, &$text ): void {
+		if ( SimpleTerms::getConfigValue( 'SimpleTermsRunOnPageView', false ) === false &&
+			SimpleTerms::getConfigValue( 'SimpleTermsWriteIntoParserOutput', false ) === false ) {
 			return;
 		}
 
-		if ( $out->getTitle() === null || !in_array( $out->getTitle()->getNamespace(), SimpleTerms::getConfigValue( 'SimpleTermsNamespaces', [] ), true ) ) {
+		if ( !SimpleTerms::titleInSimpleTermsNamespace( $out->getTitle() ) ) {
 			return;
 		}
 
 		$replacements = 0;
 		if ( strpos( $text, 'simple-terms-tooltip' ) === false ) {
-			$simpleTerms = new SimpleTerms();
+			$simpleTerms = new SimpleTermsParser();
 			$replacements = $simpleTerms->replaceHtml( $text );
 		}
 

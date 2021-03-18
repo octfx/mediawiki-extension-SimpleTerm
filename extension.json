@@ -15,44 +15,45 @@
 		}
 	},
 	"config": {
-		"SimpleTermsBackend": {
-			"value": "BasicBackend",
-			"description": "The backend to use"
-		},
 		"SimpleTermsPage": {
 			"value": "Glossary",
 			"description": "Name of wiki page"
-		},
-		"SimpleTermsDisplayOnce": {
-			"value": false,
-			"description": "Only replace the first term in each page"
-		},
-		"SimpleTermsUseCache": {
-			"value": true
-		},
-		"SimpleTermsCacheType": {
-			"value": null,
-			"description": "Type of cache to use, if null use main cache"
-		},
-		"SimpleTermsWriteIntoOutput": {
-			"value": false,
-			"description": "Write the replacement into the parser output, saves the content to cache."
-		},
-		"SimpleTermsEnableApprovedRevs": {
-			"value": false,
-			"description": "Use the approved verison of the SimpleTerms page"
 		},
 		"SimpleTermsNamespaces": {
 			"value": [0],
 			"description": "Namespaces SimpleTerms is active"
 		},
-		"SimpleTermsCacheExpiry": {
-			"value": 2592000,
-			"description": "Expiry of DefinitionList in cache"
-		},
 		"SimpleTermsDisabledElements": {
 			"value": [],
 			"description": "List of html elements which are ignored"
+		},
+		"SimpleTermsEnableApprovedRevs": {
+			"value": false,
+			"description": "Use the approved version of the SimpleTerms page"
+		},
+		"SimpleTermsDisplayOnce": {
+			"value": false,
+			"description": "Only replace the first term in each page"
+		},
+		"SimpleTermsRunOnPageView": {
+			"value": true,
+			"description": "Run the term replacements on each page view."
+		},
+		"SimpleTermsWriteIntoParserOutput": {
+			"value": false,
+			"description": "Write the replacement into the parser output, which gets saves to cache."
+		},
+		"SimpleTermsBackend": {
+			"value": "BasicBackend",
+			"description": "The backend to use"
+		},
+		"SimpleTermsCacheType": {
+			"value": null,
+			"description": "Type of cache to use, if null use main cache"
+		},
+		"SimpleTermsCacheExpiry": {
+			"value": 2592000,
+			"description": "Expiry of DefinitionList in cache"
 		}
 	},
 	"ResourceFileModulePaths": {
