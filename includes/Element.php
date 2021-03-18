@@ -27,7 +27,7 @@ class Element implements Serializable {
 	/**
 	 * @var string The HTML format
 	 */
-	private $format = '<span class="simple-terms-tooltip" role="tooltip" data-tippy-content="%s">%s</span>';
+	private $format = '$1<span class="simple-terms-tooltip" role="tooltip" data-tippy-content="%s">%s</span>$2';
 
 	/**
 	 * @var array The terms

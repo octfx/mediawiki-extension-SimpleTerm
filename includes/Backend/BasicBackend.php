@@ -267,7 +267,7 @@ class BasicBackend extends Backend {
 	 * @throws ExtensionDependencyError
 	 */
 	private function getRevisionFromApprovedRevs( Title $title ): ?RevisionRecord {
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'ApprovedRevs' ) ) {
+		if ( !ExtensionRegistry::getInstance()->isLoaded( 'Approved Revs' ) ) {
 			throw new ExtensionDependencyError( [
 				[
 					'msg' => 'Approved Revs is not loaded',
