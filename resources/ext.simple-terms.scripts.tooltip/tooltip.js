@@ -16,7 +16,7 @@
 	}, config );
 
 	window.tippy(
-		document.querySelectorAll( '.simple-terms-tooltip' ),
+		document.querySelectorAll( '.mw-parser-output .simple-terms-tooltip' ),
 		config
 	);
 }() );
