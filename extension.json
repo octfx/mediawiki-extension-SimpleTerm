@@ -20,12 +20,31 @@
 			"description": "Name of wiki page"
 		},
 		"SimpleTermsNamespaces": {
-			"value": [0],
+			"value": [
+				0
+			],
 			"description": "Namespaces SimpleTerms is active"
 		},
 		"SimpleTermsDisabledElements": {
-			"value": [],
+			"value": [
+				"h1",
+				"h2",
+				"h3",
+				"h4",
+				"h5",
+				"h6"
+			],
 			"description": "List of html elements which are ignored"
+		},
+		"SimpleTermsAllowHtml": {
+			"value": false,
+			"description": "Allow HTML in tooltips",
+			"public": true
+		},
+		"SimpleTermsTippyConfig": {
+			"value": null,
+			"description": "A json string containing tippy config values. https://atomiks.github.io/tippyjs/v6/customization/",
+			"public": true
 		},
 		"SimpleTermsEnableApprovedRevs": {
 			"value": false,
@@ -92,12 +111,16 @@
 		},
 		"ParserHooks": {
 			"class": "MediaWiki\\Extension\\SimpleTerms\\Hooks\\ParserHooks"
+		},
+		"ResourceLoaderHooks": {
+			"class": "MediaWiki\\Extension\\SimpleTerms\\Hooks\\ResourceLoaderHooks"
 		}
 	},
 	"Hooks": {
 		"OutputPageBeforeHTML": "PageHooks",
 		"ParserFirstCallInit": "ParserHooks",
-		"ContentAlterParserOutput": "ParserHooks"
+		"ContentAlterParserOutput": "ParserHooks",
+		"ResourceLoaderGetConfigVars": "ResourceLoaderHooks"
 	},
 	"manifest_version": 2
 }
