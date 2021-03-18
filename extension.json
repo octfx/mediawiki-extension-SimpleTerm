@@ -123,6 +123,7 @@
 		"ArticlePurge": "PageHooks",
 		"ContentAlterParserOutput": "ParserHooks",
 		"GetDoubleUnderscoreIDs": "ParserHooks",
+		"MultiContentSave": "PageHooks",
 		"OutputPageBeforeHTML": "PageHooks",
 		"ParserFirstCallInit": "ParserHooks",
 		"ResourceLoaderGetConfigVars": "ResourceLoaderHooks"

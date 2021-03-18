@@ -188,7 +188,7 @@ class BasicBackend extends Backend {
 	 */
 	private function doParse( string $text ): void {
 		// Regex to match ; Terms (1-n) \n: Definition
-		preg_match_all( '/(;\s?(?:[\w\ -]+\n)+)(?::\s?(.+)\n)+/mu', $text, $matches );
+		preg_match_all( '/(;\s?(?:[\w\ -.]+\n)+)(?::\s?(.+)\n)+/mu', $text, $matches );
 
 		if ( empty( $matches[1] ) || empty( $matches[2] ) || count( $matches[1] ) !== count( $matches[2] ) ) {
 			return;

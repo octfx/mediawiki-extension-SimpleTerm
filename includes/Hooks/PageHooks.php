@@ -21,19 +21,24 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\SimpleTerms\Hooks;
 
+use CommentStoreComment;
 use MediaWiki\Extension\SimpleTerms\SimpleTerms;
 use MediaWiki\Extension\SimpleTerms\SimpleTermsParser;
 use MediaWiki\Hook\OutputPageBeforeHTMLHook;
 use MediaWiki\Page\Hook\ArticlePurgeHook;
+use MediaWiki\Revision\RenderedRevision;
+use MediaWiki\Storage\Hook\MultiContentSaveHook;
+use MediaWiki\User\UserIdentity;
 use OutputPage;
 use ParserOptions;
+use Status;
 use Title;
 use WikiPage;
 
 /**
  * Hooks to run relating the page
  */
-class PageHooks implements OutputPageBeforeHTMLHook, ArticlePurgeHook {
+class PageHooks implements OutputPageBeforeHTMLHook, ArticlePurgeHook, MultiContentSaveHook {
 
 	/**
 	 * Replace the terms in the page with tooltips
@@ -76,6 +81,28 @@ class PageHooks implements OutputPageBeforeHTMLHook, ArticlePurgeHook {
 	 */
 	public function onArticlePurge( $wikiPage ): void {
 		if ( $wikiPage->getTitle() === null || !$wikiPage->getTitle()->equals( Title::newFromText( SimpleTerms::getConfigValue( 'SimpleTermsPage' ) ) ) ) {
+			return;
+		}
+
+		SimpleTerms::getBackend()->purgeGlossaryFromCache();
+	}
+
+	/**
+	 * @param RenderedRevision $renderedRevision
+	 * @param UserIdentity $user
+	 * @param CommentStoreComment $summary
+	 * @param int $flags
+	 * @param Status $status
+	 * @return bool|void
+	 */
+	public function onMultiContentSave( $renderedRevision, $user, $summary, $flags, $status ) {
+		if ( $renderedRevision->getRevisionParserOutput() === null ) {
+			return;
+		}
+
+		$title = Title::newFromText( $renderedRevision->getRevisionParserOutput()->getTitleText() );
+
+		if ( $title === null || !$title->equals( Title::newFromText( SimpleTerms::getConfigValue( 'SimpleTermsPage' ) ) ) ) {
 			return;
 		}
 

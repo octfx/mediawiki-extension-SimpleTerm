@@ -26,8 +26,8 @@ use MediaWiki\MediaWikiServices;
 class ExtensionHooks {
 	/**
 	 * Extension Hooks
-     *
-     * Gets called in a callback after extension setup
+	 *
+	 * Gets called in a callback after extension setup
 	 */
 	public static function register():void {
 		/**
