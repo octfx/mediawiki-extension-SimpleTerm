@@ -88,13 +88,20 @@
 			"features": [],
 			"styles": [ "ext.simple-terms.styles.tooltip/tooltip.less" ],
 			"scripts": [
-				"ext.simple-terms.scripts.tooltip/popper-lite.min.js",
-				"ext.simple-terms.scripts.tooltip/tippy-bundle.umd.min.js",
+				"ext.simple-terms.scripts.tooltip/popper.min.js",
+				"ext.simple-terms.scripts.tooltip/tippy.js",
 				"ext.simple-terms.scripts.tooltip/tooltip.js"
 			],
 			"dependencies": [
 				"mediawiki.page.ready"
 			]
+		},
+		"ext.styles.simple-terms": {
+			"targets": [
+				"desktop",
+				"mobile"
+			],
+			"styles": [ "ext.simple-terms.styles.tooltip/tooltip.less" ]
 		}
 	},
 	"MessagesDirs": {

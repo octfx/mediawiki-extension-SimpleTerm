@@ -116,7 +116,7 @@ class DefinitionList implements Serializable, ArrayAccess {
 		foreach ( $this->getTerms() as $term ) {
 			$replacements[] = [
 				sprintf( $regex, preg_quote( $term, '\\' ) ),
-				$this[$term]->getFormattedDefinition(
+				$this[$term]->getSimpleFormattedDefinition(
 					$term,
 					SimpleTerms::getConfigValue( 'SimpleTermsAllowHtml', false ) !== true
 				)

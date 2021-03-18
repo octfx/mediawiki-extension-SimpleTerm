@@ -28,6 +28,7 @@ class Element implements Serializable {
 	 * @var string The HTML format
 	 */
 	private $format = '$1<span class="simple-terms-tooltip" role="tooltip" data-tippy-content="%s">%s</span>$2';
+	private $simpleFormat = '$1<span class="simple-terms-tooltip" title="%s">%s</span>$2';
 
 	/**
 	 * @var array The terms
@@ -91,6 +92,23 @@ class Element implements Serializable {
 		return sprintf(
 			$this->format,
 			$stripTags === true ? strip_tags( $this->definition ) : $this->definition,
+			$term
+		);
+	}
+
+	/**
+	 * @param string|null $term
+	 * @param bool $stripTags
+	 * @return string
+	 */
+	public function getSimpleFormattedDefinition( ?string $term, bool $stripTags = true ): string {
+		if ( $term === null ) {
+			$term = $this->getTerms()[0];
+		}
+
+		return sprintf(
+			$this->simpleFormat,
+			true,
 			$term
 		);
 	}
