@@ -71,8 +71,7 @@ class PageHooks implements OutputPageBeforeHTMLHook, ArticlePurgeHook, MultiCont
 		}
 
 		if ( $replacements > 0 || strpos( $text, 'simple-terms-tooltip' ) !== false ) {
-			//$out->addModules( 'ext.simple-terms' );
-            $out->addModuleStyles('ext.styles.simple-terms');
+			$out->addModules( 'ext.simple-terms' );
 		}
 	}
 

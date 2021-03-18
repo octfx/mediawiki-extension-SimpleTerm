@@ -38,8 +38,9 @@ class SimpleTermsParser {
 	 *
 	 * @var string
 	 */
-	// private $regex = '/(^|\s)%s(?![><\ \w\-\"\=]+?)/';
 	private $regex = '/(^|\s| |\W)%s($|\s| |\W)(?!.*?<\/span>)/';
+	# private $regex = '/(^|\s)%s(?![><\ \w\-\"\=]+?)/';
+	#private $regex = '/(?<![\w-])%s(?![\w-].{0,}">)/';
 
 	/**
 	 * Replaces terms in the direct parser output

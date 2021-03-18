@@ -27,8 +27,7 @@ class Element implements Serializable {
 	/**
 	 * @var string The HTML format
 	 */
-	private $format = '$1<span class="simple-terms-tooltip" role="tooltip" data-tippy-content="%s">%s</span>$2';
-	private $simpleFormat = '$1<span class="simple-terms-tooltip" title="%s">%s</span>$2';
+	private $format = '$1<span class="simple-terms-tooltip" title="%s">%s</span>$2';
 
 	/**
 	 * @var array The terms
@@ -47,7 +46,7 @@ class Element implements Serializable {
 	 */
 	public function __construct( array $terms, string $definition ) {
 		$this->terms = $terms;
-		$this->definition = $definition;
+		$this->definition = str_replace( '"', 'TRE', $definition );
 	}
 
 	/**
@@ -81,34 +80,16 @@ class Element implements Serializable {
 
 	/**
 	 * @param string|null $term
-	 * @param bool $stripTags
 	 * @return string
 	 */
-	public function getFormattedDefinition( ?string $term, bool $stripTags = true ): string {
+	public function getFormattedDefinition( ?string $term ): string {
 		if ( $term === null ) {
 			$term = $this->getTerms()[0];
 		}
 
 		return sprintf(
 			$this->format,
-			$stripTags === true ? strip_tags( $this->definition ) : $this->definition,
-			$term
-		);
-	}
-
-	/**
-	 * @param string|null $term
-	 * @param bool $stripTags
-	 * @return string
-	 */
-	public function getSimpleFormattedDefinition( ?string $term, bool $stripTags = true ): string {
-		if ( $term === null ) {
-			$term = $this->getTerms()[0];
-		}
-
-		return sprintf(
-			$this->simpleFormat,
-            strip_tags( $this->definition ),
+			strip_tags( $this->definition ),
 			$term
 		);
 	}
