@@ -127,5 +127,6 @@
 		"ParserFirstCallInit": "ParserHooks",
 		"ResourceLoaderGetConfigVars": "ResourceLoaderHooks"
 	},
+	"callback": "MediaWiki\\Extension\\SimpleTerms\\Hooks\\ExtensionHooks::register",
 	"manifest_version": 2
 }
