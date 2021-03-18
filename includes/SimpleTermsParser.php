@@ -27,6 +27,7 @@ use DOMXPath;
 use Exception;
 use ParserOutput;
 use ValueError;
+use Wikimedia\AtEase\AtEase;
 
 class SimpleTermsParser {
 
@@ -37,7 +38,8 @@ class SimpleTermsParser {
 	 *
 	 * @var string
 	 */
-	private $regex = '/%s(?!.*?<\/span>)/';
+	// private $regex = '/(^|\s)%s(?![><\ \w\-\"\=]+?)/';
+	private $regex = '/(^|\s)%s($|\s)(?!.*?<\/span>)/';
 
 	/**
 	 * Replaces terms in the direct parser output
@@ -106,14 +108,17 @@ class SimpleTermsParser {
 			$replaced = $this->doTextReplace( $text, $replacements );
 
 			$tooltipHtml = $doc->createDocumentFragment();
-			$tooltipHtml->appendXML( $text );
 
-			$textElement->parentNode->replaceChild(
-				$tooltipHtml,
-				$textElement
-			);
+			AtEase::suppressWarnings();
+			if ( $tooltipHtml->appendXML( $text ) !== false ) {
+				$textElement->parentNode->replaceChild(
+					$tooltipHtml,
+					$textElement
+				);
 
-			$replacementCount += $replaced;
+				$replacementCount += $replaced;
+			}
+			AtEase::restoreWarnings();
 		}
 
 		if ( $replacementCount > 0 ) {
