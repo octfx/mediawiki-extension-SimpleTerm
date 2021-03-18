@@ -24,12 +24,16 @@ namespace MediaWiki\Extension\SimpleTerms\Hooks;
 use MediaWiki\Extension\SimpleTerms\SimpleTerms;
 use MediaWiki\Extension\SimpleTerms\SimpleTermsParser;
 use MediaWiki\Hook\OutputPageBeforeHTMLHook;
+use MediaWiki\Page\Hook\ArticlePurgeHook;
 use OutputPage;
+use ParserOptions;
+use Title;
+use WikiPage;
 
 /**
  * Hooks to run relating the page
  */
-class PageHooks implements OutputPageBeforeHTMLHook {
+class PageHooks implements OutputPageBeforeHTMLHook, ArticlePurgeHook {
 
 	/**
 	 * Replace the terms in the page with tooltips
@@ -47,6 +51,14 @@ class PageHooks implements OutputPageBeforeHTMLHook {
 			return;
 		}
 
+		// This is so hacky, but there seems to be no other way to detect the noglossary property?
+		// Let's hope that the parser cache works...
+		// TODO: Fixup
+		$parserOutput = $out->getWikiPage()->getParserOutput( ParserOptions::newCanonical() );
+		if ( $parserOutput === false || isset( $parserOutput->getProperties()['noglossary'] ) ) {
+			return;
+		}
+
 		$replacements = 0;
 		if ( strpos( $text, 'simple-terms-tooltip' ) === false ) {
 			$simpleTerms = new SimpleTermsParser();
@@ -56,5 +68,17 @@ class PageHooks implements OutputPageBeforeHTMLHook {
 		if ( $replacements > 0 || strpos( $text, 'simple-terms-tooltip' ) !== false ) {
 			$out->addModules( 'ext.simple-terms' );
 		}
+	}
+
+	/**
+	 * @param WikiPage $wikiPage
+	 * @return void
+	 */
+	public function onArticlePurge( $wikiPage ): void {
+		if ( $wikiPage->getTitle() === null || !$wikiPage->getTitle()->equals( Title::newFromText( SimpleTerms::getConfigValue( 'SimpleTermsPage' ) ) ) ) {
+			return;
+		}
+
+		SimpleTerms::getBackend()->purgeGlossaryFromCache();
 	}
 }

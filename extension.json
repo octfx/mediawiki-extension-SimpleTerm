@@ -102,6 +102,9 @@
 			"i18n"
 		]
 	},
+	"ExtensionMessagesFiles": {
+		"SimpleTermsMagic": "SimpleTerms.i18n.magic.php"
+	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\SimpleTerms\\": "includes/"
 	},
@@ -117,9 +120,11 @@
 		}
 	},
 	"Hooks": {
+		"ArticlePurge": "PageHooks",
+		"ContentAlterParserOutput": "ParserHooks",
+		"GetDoubleUnderscoreIDs": "ParserHooks",
 		"OutputPageBeforeHTML": "PageHooks",
 		"ParserFirstCallInit": "ParserHooks",
-		"ContentAlterParserOutput": "ParserHooks",
 		"ResourceLoaderGetConfigVars": "ResourceLoaderHooks"
 	},
 	"manifest_version": 2

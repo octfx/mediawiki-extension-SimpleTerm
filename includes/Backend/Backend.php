@@ -53,6 +53,13 @@ abstract class Backend {
 	abstract public static function getInstance();
 
 	/**
+	 * Purge the glossary from cache
+	 *
+	 * @return mixed
+	 */
+	abstract public function purgeGlossaryFromCache();
+
+	/**
 	 * A flag which determines if the serialized definition list is written to cache
 	 *
 	 * @return bool

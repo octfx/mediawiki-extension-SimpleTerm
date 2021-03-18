@@ -25,6 +25,7 @@ use Content;
 use MediaWiki\Content\Hook\ContentAlterParserOutputHook;
 use MediaWiki\Extension\SimpleTerms\SimpleTerms;
 use MediaWiki\Extension\SimpleTerms\SimpleTermsParser;
+use MediaWiki\Hook\GetDoubleUnderscoreIDsHook;
 use MediaWiki\Hook\ParserFirstCallInitHook;
 use MWException;
 use Parser;
@@ -36,7 +37,7 @@ use Title;
 /**
  * Hooks to run relating to the parser
  */
-class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHook {
+class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHook, GetDoubleUnderscoreIDsHook {
 
 	/**
 	 * Parses the SimpleTermsPage to cache
@@ -70,7 +71,7 @@ class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHo
 			return;
 		}
 
-		if ( !SimpleTerms::titleInSimpleTermsNamespace( $title ) ) {
+		if ( !SimpleTerms::titleInSimpleTermsNamespace( $title ) || isset( $parserOutput->getProperties()['noglossary'] ) ) {
 			return;
 		}
 
@@ -81,5 +82,13 @@ class ParserHooks implements ParserFirstCallInitHook, ContentAlterParserOutputHo
 		$simpleTerms->replaceText( $parserOutput );
 
 		wfDebug( 'SimpleTerms Call Time', 'all', $profiler->getFunctionStats() );
+	}
+
+	/**
+	 * @param string[] &$doubleUnderscoreIDs
+	 * @return void
+	 */
+	public function onGetDoubleUnderscoreIDs( &$doubleUnderscoreIDs ): void {
+		$doubleUnderscoreIDs[] = 'noglossary';
 	}
 }

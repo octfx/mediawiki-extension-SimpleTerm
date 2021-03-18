@@ -100,6 +100,13 @@ class BasicBackend extends Backend {
 	}
 
 	/**
+	 * Purges the SimpleTerms tree from the cache.
+	 */
+	public function purgeGlossaryFromCache(): void {
+		$this->getCache()->delete( $this->getCacheKey() );
+	}
+
+	/**
 	 * Returns the serialized definition list or false on error
 	 *
 	 * @return string
@@ -181,7 +188,7 @@ class BasicBackend extends Backend {
 	 */
 	private function doParse( string $text ): void {
 		// Regex to match ; Terms (1-n) \n: Definition
-		preg_match_all( '/(;\s?(?:.+\n)+)(?::\s?(.+)\n)+/mu', $text, $matches );
+		preg_match_all( '/(;\s?(?:[\w\ -]+\n)+)(?::\s?(.+)\n)+/mu', $text, $matches );
 
 		if ( empty( $matches[1] ) || empty( $matches[2] ) || count( $matches[1] ) !== count( $matches[2] ) ) {
 			return;
@@ -313,17 +320,5 @@ class BasicBackend extends Backend {
 		}
 
 		return self::$serializedListData ?? null;
-	}
-
-	/**
-	 * Purges the SimpleTerms tree from the cache.
-	 */
-	public static function purgeGlossaryFromCache(): void {
-		$instance = self::getInstance();
-		if ( !$instance->useCache() ) {
-			return;
-		}
-
-		$instance->getCache()->delete( $instance->getCacheKey() );
 	}
 }
